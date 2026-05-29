@@ -6,7 +6,7 @@ dotenv.config()
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY)
 
 export const getGeminiModel = () => {
-  return genAI.getGenerativeModel({ model: 'gemini-1.5-flash' })
+  return genAI.getGenerativeModel({ model: 'gemini-2.5-flash' })
 }
 
 export const analyzeWebsiteWithAI = async (websiteData) => {

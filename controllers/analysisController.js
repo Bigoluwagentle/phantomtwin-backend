@@ -9,7 +9,16 @@ const scrapeWebsite = async (url) => {
     const response = await axios.get(url, {
       timeout: 15000,
       headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
+        'Accept-Language': 'en-US,en;q=0.5',
+        'Accept-Encoding': 'gzip, deflate, br',
+        'Connection': 'keep-alive',
+        'Upgrade-Insecure-Requests': '1',
+        'Sec-Fetch-Dest': 'document',
+        'Sec-Fetch-Mode': 'navigate',
+        'Sec-Fetch-Site': 'none',
+        'Cache-Control': 'max-age=0'
       }
     })
 
@@ -57,7 +66,7 @@ const scrapeWebsite = async (url) => {
     const htmlSnippet = response.data.slice(0, 3000)
 
     return {
-      title,
+      title: title || 'Unknown',
       metaDescription,
       colors: [...new Set(colors)].slice(0, 20),
       fonts,
@@ -68,46 +77,21 @@ const scrapeWebsite = async (url) => {
       htmlSnippet
     }
   } catch (error) {
+    if (error.response?.status === 403 || error.response?.status === 401) {
+      return {
+        title: new URL(url).hostname,
+        metaDescription: 'Website restricted direct scraping',
+        colors: [],
+        fonts: [],
+        headings: [new URL(url).hostname],
+        navItems: [],
+        ctaButtons: [],
+        sections: [],
+        htmlSnippet: ''
+      }
+    }
     throw new Error(`Failed to scrape website: ${error.message}`)
   }
-}
-
-export const startAnalysis = async (req, res) => {
-  const { url } = req.body
-
-  if (!url) {
-    return res.status(400).json({ error: 'URL is required' })
-  }
-
-  let formattedUrl = url
-  if (!url.startsWith('http://') && !url.startsWith('https://')) {
-    formattedUrl = `https://${url}`
-  }
-
-  try {
-    new URL(formattedUrl)
-  } catch {
-    return res.status(400).json({ error: 'Invalid URL provided' })
-  }
-
-  const sessionId = uuidv4()
-
-  const analysis = new Analysis({
-    url: formattedUrl,
-    sessionId,
-    status: 'pending'
-  })
-
-  await analysis.save()
-
-  res.json({
-    success: true,
-    sessionId,
-    analysisId: analysis._id,
-    message: 'Analysis started'
-  })
-
-  runAnalysisPipeline(analysis._id, formattedUrl)
 }
 
 const runAnalysisPipeline = async (analysisId, url) => {
