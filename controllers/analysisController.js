@@ -140,3 +140,41 @@ export const getAnalysisStatus = async (req, res) => {
     res.status(500).json({ error: error.message })
   }
 }
+
+export const startAnalysis = async (req, res) => {
+  const { url } = req.body
+
+  if (!url) {
+    return res.status(400).json({ error: 'URL is required' })
+  }
+
+  let formattedUrl = url
+  if (!url.startsWith('http://') && !url.startsWith('https://')) {
+    formattedUrl = `https://${url}`
+  }
+
+  try {
+    new URL(formattedUrl)
+  } catch {
+    return res.status(400).json({ error: 'Invalid URL provided' })
+  }
+
+  const sessionId = uuidv4()
+
+  const analysis = new Analysis({
+    url: formattedUrl,
+    sessionId,
+    status: 'pending'
+  })
+
+  await analysis.save()
+
+  res.json({
+    success: true,
+    sessionId,
+    analysisId: analysis._id,
+    message: 'Analysis started'
+  })
+
+  runAnalysisPipeline(analysis._id, formattedUrl)
+}
