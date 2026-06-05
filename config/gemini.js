@@ -6,10 +6,10 @@ dotenv.config()
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY)
 
 export const getGeminiModel = () => {
-  return genAI.getGenerativeModel({ model: 'gemini-2.5-flash' })
+  return genAI.getGenerativeModel({ model: 'gemini-2.5-flash-preview-05-20' })
 }
 
-export const analyzeWebsiteWithAI = async (websiteData) => {
+export const analyzeWebsiteWithAI = async (websiteData, retries = 3) => {
   const model = getGeminiModel()
 
   const prompt = `
@@ -69,16 +69,28 @@ Return ONLY a valid JSON object with this exact structure:
   },
   "redesignSuggestions": {
     "futuristic": "How to make it futuristic",
-    "minimalistSaaS": "How to make it minimalist SaaS",
+    "minimalistSaas": "How to make it minimalist SaaS",
     "cyberpunk": "How to make it cyberpunk"
   }
 }
 `
 
-  const result = await model.generateContent(prompt)
-  const response = await result.response
-  const text = response.text()
-
-  const cleaned = text.replace(/```json|```/g, '').trim()
-  return JSON.parse(cleaned)
+  for (let i = 0; i < retries; i++) {
+    try {
+      const result = await model.generateContent(prompt)
+      const response = await result.response
+      const text = response.text()
+      const cleaned = text.replace(/```json|```/g, '').trim()
+      return JSON.parse(cleaned)
+    } catch (error) {
+      const is503 = error.message?.includes('503') || error.message?.includes('high demand')
+      if (is503 && i < retries - 1) {
+        const waitTime = (i + 1) * 5000
+        console.log(`Gemini 503 — retrying in ${waitTime / 1000}s... (attempt ${i + 1}/${retries})`)
+        await new Promise(resolve => setTimeout(resolve, waitTime))
+      } else {
+        throw error
+      }
+    }
+  }
 }
