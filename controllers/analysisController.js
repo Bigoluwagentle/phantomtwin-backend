@@ -111,9 +111,16 @@ const runAnalysisPipeline = async (analysisId, url) => {
       aiAnalysis
     })
   } catch (error) {
+    const isRateLimit = error.message?.includes('503') ||
+      error.message?.includes('429') ||
+      error.message?.includes('high demand') ||
+      error.message?.includes('Too Many Requests')
+
     await Analysis.findByIdAndUpdate(analysisId, {
       status: 'failed',
-      errorMessage: error.message
+      errorMessage: isRateLimit
+        ? 'Gemini AI is busy right now. Please wait 1-2 minutes and try again.'
+        : error.message
     })
   }
 }
