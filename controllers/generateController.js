@@ -24,33 +24,44 @@ export const generateCode = async (req, res) => {
     const model = getGeminiModel()
 
     const prompt = `
-You are PhantomTwin, an expert frontend engineer. Based on this website analysis, generate clean React component code.
+      You are PhantomTwin, an expert frontend engineer. Generate COMPLETE, FULLY IMPLEMENTED React components.
 
-Website: ${analysis.url}
-Design Style: ${analysis.aiAnalysis?.designStrategy?.designStyle}
-Color Mood: ${analysis.aiAnalysis?.colorSystem?.mood}
-Target Audience: ${analysis.aiAnalysis?.targetAudience?.primary}
-Headings found: ${JSON.stringify(analysis.scrapedData?.headings)}
-Nav Items: ${JSON.stringify(analysis.scrapedData?.navItems)}
-CTA Buttons: ${JSON.stringify(analysis.scrapedData?.ctaButtons)}
-UX Strengths: ${JSON.stringify(analysis.aiAnalysis?.uxStrengths)}
-Component Breakdown: ${JSON.stringify(analysis.aiAnalysis?.componentBreakdown)}
+      CRITICAL RULES:
+      - Write EVERY line of code in full
+      - NO placeholder comments like /* ... */ or // implementation here
+      - NO empty function bodies
+      - Every component must have complete JSX and inline styles
+      - Components must be visually accurate to the original site
 
-Generate a complete React component that recreates the essence of this website.
-Use inline styles only — no external CSS files or Tailwind.
-Make it visually accurate to the original design style.
-Include a Navbar, Hero section, Features section, and Footer.
-Use real content from the headings and nav items above.
+      Website: ${analysis.url}
+      Design Style: ${analysis.aiAnalysis?.designStrategy?.designStyle}
+      Color Mood: ${analysis.aiAnalysis?.colorSystem?.mood}
+      Target Audience: ${analysis.aiAnalysis?.targetAudience?.primary}
+      Headings: ${JSON.stringify(analysis.scrapedData?.headings)}
+      Nav Items: ${JSON.stringify(analysis.scrapedData?.navItems)}
+      CTA Buttons: ${JSON.stringify(analysis.scrapedData?.ctaButtons)}
+      UX Strengths: ${JSON.stringify(analysis.aiAnalysis?.uxStrengths)}
 
-Return ONLY a valid JSON object with this structure:
-{
-  "reactComponent": "full React JSX component code as a string",
-  "css": "additional CSS string if needed",
-  "componentList": [
-    { "name": "ComponentName", "description": "what it does", "code": "jsx code string" }
-  ]
-}
-`
+      Generate these 4 fully implemented components using ONLY inline styles:
+
+      1. Navbar - with logo, nav links, and CTA button
+      2. HeroSection - with headline, subtext, and CTA
+      3. FeaturesSection - with feature cards grid
+      4. Footer - with links and copyright
+
+      Return ONLY a valid JSON object, no markdown, no backticks:
+      {
+        "reactComponent": "complete App component that imports and renders all 4 components as one string",
+        "css": "",
+        "componentList": [
+          { "name": "Navbar", "description": "top navigation", "code": "complete full navbar jsx code as string" },
+          { "name": "HeroSection", "description": "hero section", "code": "complete full hero jsx code as string" },
+          { "name": "FeaturesSection", "description": "features grid", "code": "complete full features jsx code as string" },
+          { "name": "Footer", "description": "footer", "code": "complete full footer jsx code as string" }
+        ]
+      }
+    
+    `
 
     const result = await model.generateContent(prompt)
     const response = await result.response
